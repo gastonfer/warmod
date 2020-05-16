@@ -234,8 +234,8 @@
 	}
 	"Console"
 	{
-		"en"			"{aqua}Internacional: "
-		"es"			"{aqua}Internacional: "
+		"en"			"{aqua}ATVICIADA: "
+		"es"			"{aqua}ATVICIADA: "
 	}
 	"Available Commands"
 	{
@@ -447,6 +447,21 @@
 		"en"			"WarMod Commands"
 		"es"			"Comandos del WarMod"
 	}
+	"Admin_Menu WarMod Options"
+	{
+		"en"			"Mix options"
+		"es"			"Opciones de mix"
+	}
+	"Admin_Menu WarMod spec"
+	{
+		"en"			"All players to spectator"
+		"es"			"Todos los jugadores a espectador"
+	}
+	"Admin_Menu WarMod changeteam"
+	{
+		"en"			"Change team"
+		"es"			"Cambiar equipo"
+	}
 	"Admin_Menu Enable ReadyUp"
 	{
 		"en"			"Enable ReadyUp"
@@ -511,6 +526,36 @@
 	{
 		"en"			"Cancel knife round"
 		"es"			"Cancelar ronda a cuchillos"
+	}
+	"Menu_Players"
+	{
+		"en"			"Players list"
+		"es"			"Lista de jugadores"
+	}
+	"Menu Teams"
+	{
+		"en"			"Change team to:"
+		"es"			"Cambiar equipo a:"
+	}
+	"Menu_Teams Option 1"
+	{
+		"en"			"Spectator"
+		"es"			"Espectador"
+	}
+	"Menu_Teams Option 2"
+	{
+		"en"			"Terrorist"
+		"es"			"Terrorista"
+	}
+	"Menu_Teams Option 3"
+	{
+		"en"			"Counter-Terrorist"
+		"es"			"Anti-Terrorista"
+	}
+	"No Players List"
+	{
+		"en"			"There aren't players to add to the list."
+		"es"			"No hay jugadores para agregar a la lista."
 	}
 	"Warm Up Active"
 	{

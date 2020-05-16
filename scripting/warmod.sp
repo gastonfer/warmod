@@ -11,11 +11,13 @@
 #include <adminmenu>
 #include <autoupdate>
 
+//menu
+TopMenu aTopMenu;
+
 /* player info */
 new g_player_list[MAXPLAYERS + 1];
 new bool:g_cancel_list[MAXPLAYERS + 1];
 new String:user_damage[MAXPLAYERS + 1][DMG_MSG_SIZE];
-
 
 new g_scores[2][2];
 new g_scores_overtime[2][256][2];
@@ -180,7 +182,6 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public OnPluginStart()
 {
 	LoadTranslations("warmod.phrases");
-	
 	new Handle:topmenu;
 	if (LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
 	{
@@ -539,14 +540,19 @@ public OnAdminMenuReady(Handle:topmenu)
 	}
 	
 	g_h_menu = topmenu;
-	new TopMenuObject:new_menu = AddToTopMenu(g_h_menu, "WarModCommands", TopMenuObject_Category, MenuHandler, INVALID_TOPMENUOBJECT);
+	aTopMenu = TopMenu.FromHandle(topmenu);
+	new TopMenuObject:new_menu = aTopMenu.AddCategory("WarModCommands", MenuHandler, "WarModCommands", ADMFLAG_CUSTOM1); 
+	
 	
 	if (new_menu == INVALID_TOPMENUOBJECT)
 	{
 		return;
 	}
+	AddToTopMenu(g_h_menu, "menu", TopMenuObject_Item, MenuHandler, new_menu, "menu", ADMFLAG_CUSTOM1);
+	AddToTopMenu(g_h_menu, "spec", TopMenuObject_Item, MenuHandler, new_menu, "spec", ADMFLAG_CUSTOM1);
+	AddToTopMenu(g_h_menu, "team", TopMenuObject_Item, MenuHandler, new_menu, "team", ADMFLAG_CUSTOM1);
 	
-	AddToTopMenu(g_h_menu, "forcestart", TopMenuObject_Item, MenuHandler, new_menu, "forcestart", ADMFLAG_CUSTOM1);
+	/*AddToTopMenu(g_h_menu, "forcestart", TopMenuObject_Item, MenuHandler, new_menu, "forcestart", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "knife", TopMenuObject_Item, MenuHandler, new_menu, "knife", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "ck", TopMenuObject_Item, MenuHandler, new_menu, "ck", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "readyup", TopMenuObject_Item, MenuHandler, new_menu, "readyup", ADMFLAG_CUSTOM1);
@@ -554,7 +560,7 @@ public OnAdminMenuReady(Handle:topmenu)
 	AddToTopMenu(g_h_menu, "cancelmatch", TopMenuObject_Item, MenuHandler, new_menu, "cancelmatch", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "forceallready", TopMenuObject_Item, MenuHandler, new_menu, "forceallready", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "forceallunready", TopMenuObject_Item, MenuHandler, new_menu, "forceallunready", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "toggleactive", TopMenuObject_Item, MenuHandler, new_menu, "toggleactive", ADMFLAG_CUSTOM1);
+	AddToTopMenu(g_h_menu, "toggleactive", TopMenuObject_Item, MenuHandler, new_menu, "toggleactive", ADMFLAG_CUSTOM1);*/
 }
 
 public OnClientPutInServer(client)
@@ -620,7 +626,7 @@ ResetMatch(bool:silent)
 	g_overtime_count = 0;
 	UpdateStatus();
 	
-	CreateTimer(10.0, StopRecord);
+	CreateTimer(1.0, StopRecord);
 	
 	if (GetConVarBool(g_h_auto_ready))
 	{
@@ -4679,7 +4685,7 @@ RenameLogs()
 		}
 		RenameFile(new_log_filename, old_log_filename);
 	}
-	CreateTimer(15.0, RenameDemos);
+	CreateTimer(10.0, RenameDemos);
 }
 
 public Action:RenameDemos(Handle:timer)
@@ -4933,127 +4939,321 @@ public MenuHandler(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id
 	{
 		if (action == TopMenuAction_DisplayTitle)
 		{
-			Format(buffer, maxlength, "%t:", "Admin_Menu WarMod Commands");
+			Format(buffer, maxlength, "%t:", "Admin_Menu WarMod Commands");	
 		}
 		else if (action == TopMenuAction_DisplayOption)
 		{
 			Format(buffer, maxlength, "%t", "Admin_Menu WarMod Commands");
 		}
 	}
-	else if (StrEqual(menu_name, "forcestart"))
+	else if (StrEqual(menu_name, "menu"))
 	{
 		if (action == TopMenuAction_DisplayOption)
 		{
-			Format(buffer, maxlength, "%t", "Admin_Menu Force Start");
+			Format(buffer, maxlength, "%t", "Admin_Menu WarMod Options");
 		}
 		else if (action == TopMenuAction_SelectOption)
 		{
-			ForceStart(param, 0);
+			DisplayListMenu(param);
 		}
 	}
-	else if (StrEqual(menu_name, "knife"))
+	else if (StrEqual(menu_name, "spec"))
 	{
 		if (action == TopMenuAction_DisplayOption)
 		{
-			Format(buffer, maxlength, "%t", "Admin_Menu Knife");
+			Format(buffer, maxlength, "%t", "Admin_Menu WarMod spec");
 		}
 		else if (action == TopMenuAction_SelectOption)
 		{
-			ServerCommand("knife");
-		}
-	}
-	else if (StrEqual(menu_name, "ck"))
-	{
-		if (action == TopMenuAction_DisplayOption)
-		{
-			Format(buffer, maxlength, "%t", "Admin_Menu Cancel Knife");
-		}
-		else if (action == TopMenuAction_SelectOption)
-		{
-			ServerCommand("ck");
-		}
-	}
-	else if (StrEqual(menu_name, "readyup"))
-	{
-		if (action == TopMenuAction_DisplayOption)
-		{
-			if (g_ready_enabled)
+			int count = 0;
+			for (int i=1; i<=MaxClients; i++)
 			{
-				Format(buffer, maxlength, "%t", "Admin_Menu Disable ReadyUp");
+				if (IsClientConnected(i) && !IsClientObserver(i))
+				{
+					ChangeClientTeam(i, 1);
+					count++;
+				}
 			}
-			else
-			{
-				Format(buffer, maxlength, "%t", "Admin_Menu Enable ReadyUp");
-			}
-		}
-		else if (action == TopMenuAction_SelectOption)
-		{
-			ReadyToggle(param, 0);
+			if (count>0)
+				CPrintToChatAll("{darkred}%s: {aqua}%t",Prefix ,"Forced Spectate");
 		}
 	}
-	else if (StrEqual(menu_name, "cancelhalf"))
+	else if (StrEqual(menu_name, "team"))
 	{
 		if (action == TopMenuAction_DisplayOption)
 		{
-			Format(buffer, maxlength, "%t", "Admin_Menu Cancel Half");
+			Format(buffer, maxlength, "%t", "Admin_Menu WarMod changeteam");
 		}
 		else if (action == TopMenuAction_SelectOption)
 		{
-			NotLive(param, 0);
-		}
-	}
-	else if (StrEqual(menu_name, "cancelmatch"))
-	{
-		if (action == TopMenuAction_DisplayOption)
-		{
-			Format(buffer, maxlength, "%t", "Admin_Menu Cancel Match");
-		}
-		else if (action == TopMenuAction_SelectOption)
-		{
-			CancelMatch(param, 0);
-		}
-	}
-	else if (StrEqual(menu_name, "forceallready"))
-	{
-		if (action == TopMenuAction_DisplayOption)
-		{
-			Format(buffer, maxlength, "%t", "Admin_Menu ForceAllReady");
-		}
-		else if (action == TopMenuAction_SelectOption)
-		{
-			ForceAllReady(param, 0);
-		}
-	}
-	else if (StrEqual(menu_name, "forceallunready"))
-	{
-		if (action == TopMenuAction_DisplayOption)
-		{
-			Format(buffer, maxlength, "%t", "Admin_Menu ForceAllUnready");
-		}
-		else if (action == TopMenuAction_SelectOption)
-		{
-			ForceAllUnready(param, 0);
-		}
-	}
-	else if (StrEqual(menu_name, "toggleactive"))
-	{
-		if (action == TopMenuAction_DisplayOption)
-		{
-			if (GetConVarBool(g_h_active))
-			{
-				Format(buffer, maxlength, "%t", "Admin_Menu Deactivate WarMod");
-			}
-			else
-			{
-				Format(buffer, maxlength, "%t", "Admin_Menu Activate WarMod");
-			}
-		}
-		else if (action == TopMenuAction_SelectOption)
-		{
-			ActiveToggle(param, 0);
+			DisplayPlayersMenu(param);
 		}
 	}
 }
+
+public DisplayListMenu(client)
+{
+	char buffer[128];
+	Format(buffer, sizeof(buffer), "%t:", "Admin_Menu WarMod Commands");	
+	Menu menu = new Menu(MenuHandler_List, MENU_ACTIONS_ALL);
+	menu.SetTitle(buffer);
+	
+	char force[64];
+	Format(force, 64, "%t", "Admin_Menu Force Start");
+	menu.AddItem("forcestart", force);
+	
+	char knfe[64], ck[64];
+	Format(knfe, 64, "%t", "Admin_Menu Knife");
+	menu.AddItem("knife", knfe);
+	Format(ck, 64, "%t", "Admin_Menu Cancel Knife");
+	menu.AddItem("ck", ck);
+	
+	char chalf[64];
+	Format(chalf, 64, "%t", "Admin_Menu Cancel Half");
+	menu.AddItem("cancelhalf", chalf);
+	char cmatch[64];
+	Format(cmatch, 64, "%t", "Admin_Menu Cancel Match");
+	menu.AddItem("cancelmatch", cmatch);
+	
+	char rdyup[64];
+	if (g_ready_enabled)
+	{
+		Format(rdyup, 64, "%t", "Admin_Menu Disable ReadyUp");	
+	}
+	else
+	{
+		Format(rdyup, 64, "%t", "Admin_Menu Enable ReadyUp");
+	}	
+	menu.AddItem("readyup", rdyup);
+	
+	char tactive[64];
+	if (GetConVarBool(g_h_active))
+	{
+		Format(tactive, 64, "%t", "Admin_Menu Deactivate WarMod");
+	}
+	else
+	{
+		Format(tactive, 64, "%t", "Admin_Menu Activate WarMod");
+	}
+	menu.AddItem("toggleactive", tactive);
+	
+	
+	char frdy[64];
+	Format(frdy, 64, "%t", "Admin_Menu ForceAllReady");
+	menu.AddItem("forceallready", frdy);
+	char furdy[64];
+	Format(furdy, 64, "%t", "Admin_Menu ForceAllUnready");
+	menu.AddItem("forceallunready", furdy);
+	
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+public int MenuHandler_List(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		if (param2 == MenuCancel_ExitBack && aTopMenu)
+		{
+			aTopMenu.Display(param1, TopMenuPosition_LastCategory);
+		}
+	}
+	else if (action == MenuAction_Select)
+	{
+		char info[64];
+		
+		menu.GetItem(param2, info, sizeof(info));
+		
+		if (StrEqual(info, "forcestart"))
+		{
+			ForceStart(param1, 0);
+		}
+		else if (StrEqual(info, "knife"))
+		{
+			ServerCommand("knife");
+		}
+		else if (StrEqual(info, "ck"))
+		{
+			ServerCommand("ck");
+		}
+		else if (StrEqual(info, "readyup"))
+		{
+			ReadyToggle(param1, 0);
+		}
+		else if (StrEqual(info, "cancelhalf"))
+		{
+			NotLive(param1, 0);
+		}
+		else if (StrEqual(info, "cancelmatch"))
+		{
+			CancelMatch(param1, 0);
+		}
+		else if (StrEqual(info, "forceallready"))
+		{
+			ForceAllReady(param1, 0);
+		}
+		else if (StrEqual(info, "forceallunready"))
+		{
+			ForceAllUnready(param1, 0);
+		}
+		else if (StrEqual(info, "toggleactive"))
+		{
+			ActiveToggle(param1, 0);
+		}
+	}
+}
+
+public DisplayPlayersMenu(client)
+{
+	Menu menu = new Menu(MenuHandle_Options);
+	menu.SetTitle("%t", "Menu_Players");
+	int count = 0;
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (IsClientConnected(i) && !IsClientSourceTV(i))
+		{
+			char sName[MAX_NAME_LENGTH];
+			GetClientName(i, sName, sizeof(sName));
+			if (GetClientTeam(i) == 2)
+			{
+				Format(sName, sizeof(sName), "%s(T)", sName);
+			}
+			else if (GetClientTeam(i) == 3)
+			{
+				Format(sName, sizeof(sName), "%s(CT)", sName);
+			}
+			else
+			{
+				Format(sName, sizeof(sName), "%s(ESPECTADOR)", sName);
+			}
+			char stm[64];
+			GetClientAuthId(i, AuthId_Steam3, stm, sizeof(stm));
+			Format(stm, sizeof(stm), "%s", stm);
+			menu.AddItem(stm, sName);
+			count++;
+		}
+	}
+	if (count == 0)
+	{
+		char nPlayers[127];
+		Format(nPlayers, sizeof(nPlayers), "%t", "No Players List");
+		menu.AddItem("none", nPlayers, ITEMDRAW_DISABLED);
+	}
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+public int MenuHandle_Options(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		if (param2 == MenuCancel_ExitBack && aTopMenu)
+		{
+			aTopMenu.Display(param1, TopMenuPosition_LastCategory);
+		}
+	}
+	else if (action == MenuAction_Select)
+	{
+		char info[64];
+		menu.GetItem(param2, info, sizeof(info));
+
+		int i=0;
+		char stm[64] = "n";
+		while (!StrEqual(info, stm))
+		{
+			i++;
+			GetClientAuthId(i, AuthId_Steam3, stm, sizeof(stm));
+		}
+		TeamsMenu(param1, i);
+	}
+}
+
+public TeamsMenu(client, target)
+{
+	Menu menu = new Menu(TeamOptions);
+	menu.SetTitle("%t", "Menu Teams");
+	char team1[32], team2[32], team3[32];
+	Format(team1, sizeof(team1), "%t", "Menu_Teams Option 1");
+	Format(team2, sizeof(team2), "%t", "Menu_Teams Option 2");
+	Format(team3, sizeof(team3), "%t", "Menu_Teams Option 3");
+	
+	
+	char info1[7];
+	Format(info1, sizeof(info1), "%d,SP", target);
+	char info2[7];
+	Format(info2, sizeof(info2), "%d,TR", target);	
+	char info3[7];
+	Format(info3, sizeof(info3), "%d,CT", target);
+	switch (GetClientTeam(target))
+	{
+		case 0,1:
+		{
+			menu.AddItem(info2, team2);
+			menu.AddItem(info3, team3);
+		}
+		case 2:
+		{
+			menu.AddItem(info1, team1);
+			menu.AddItem(info3, team3);
+		}
+		case 3:
+		{
+			menu.AddItem(info1, team1);
+			menu.AddItem(info2, team2);
+		}
+	}
+	menu.ExitBackButton = true;
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+public int TeamOptions(Menu menu, MenuAction action, int param1, int param2)
+{
+	if (action == MenuAction_End)
+	{
+		delete menu;
+	}
+	else if (action == MenuAction_Cancel)
+	{
+		if (param2 == MenuCancel_ExitBack && aTopMenu)
+		{
+			DisplayPlayersMenu(param1);
+		}
+	}
+	else if (action == MenuAction_Select)
+	{
+		char info[64];
+		menu.GetItem(param2, info, sizeof(info));
+		
+		char tmp[3];
+		
+		int str = SplitString(info, ",", tmp ,sizeof(tmp));
+		strcopy(info ,sizeof(info), info[str]);
+		
+		str = StringToInt(tmp);
+		
+		
+		if (StrEqual(info, "SP"))
+		{
+			ChangeClientTeam(str, 1);
+		}
+		else if (StrEqual(info, "TR"))
+		{
+			CS_SwitchTeam(str, 2);
+		}
+		else
+		{
+			CS_SwitchTeam(str, 3);
+		}
+		
+	}
+}
+
 
 public Action:RestartRound(Handle:timer, any:delay)
 {
