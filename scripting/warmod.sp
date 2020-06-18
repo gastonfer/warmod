@@ -551,16 +551,6 @@ public OnAdminMenuReady(Handle:topmenu)
 	AddToTopMenu(g_h_menu, "menu", TopMenuObject_Item, MenuHandler, new_menu, "menu", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "spec", TopMenuObject_Item, MenuHandler, new_menu, "spec", ADMFLAG_CUSTOM1);
 	AddToTopMenu(g_h_menu, "team", TopMenuObject_Item, MenuHandler, new_menu, "team", ADMFLAG_CUSTOM1);
-	
-	/*AddToTopMenu(g_h_menu, "forcestart", TopMenuObject_Item, MenuHandler, new_menu, "forcestart", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "knife", TopMenuObject_Item, MenuHandler, new_menu, "knife", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "ck", TopMenuObject_Item, MenuHandler, new_menu, "ck", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "readyup", TopMenuObject_Item, MenuHandler, new_menu, "readyup", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "cancelhalf", TopMenuObject_Item, MenuHandler, new_menu, "cancelhalf", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "cancelmatch", TopMenuObject_Item, MenuHandler, new_menu, "cancelmatch", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "forceallready", TopMenuObject_Item, MenuHandler, new_menu, "forceallready", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "forceallunready", TopMenuObject_Item, MenuHandler, new_menu, "forceallunready", ADMFLAG_CUSTOM1);
-	AddToTopMenu(g_h_menu, "toggleactive", TopMenuObject_Item, MenuHandler, new_menu, "toggleactive", ADMFLAG_CUSTOM1);*/
 }
 
 public OnClientPutInServer(client)
@@ -1307,13 +1297,7 @@ public Action:ConsoleScore(client, args)
 				PrintToServer("%s %T:",Prefix ,"Match Is Live", LANG_SERVER);
 			}
 		}
-		PrintToConsole(client, "%s %s: [%d] %s: [%d] MR%d",Prefix ,g_t_name, GetTScore(), g_ct_name, GetCTScore(), GetConVarInt(g_h_max_rounds));
-	//	CPrintToChat(client, "{darkred}%s {red}%s: {aliceblue}[%d] {fullblue}%s: {aliceblue}[%d]",Prefix ,g_t_name, GetTScore(), g_ct_name, GetCTScore()); 
-		if (g_overtime)
-		{
-			PrintToConsole(client, "%s %t%s (%d): [%d] %s: [%d] MR%d", "Score Overtime",Prefix ,"Score Overtime", g_overtime_count + 1, g_t_name, GetTOTScore(), g_ct_name, GetCTOTScore(), GetConVarInt(g_h_overtime_mr));
-			CPrintToChat(client, "{darkred}%s {white}%t{red}%s {aliceblue}(%d): [%d] {fullblue}%s: {aliceblue}[%d] MR%d", "Score Overtime",Prefix ,g_overtime_count + 1, g_t_name, GetTOTScore(), g_ct_name, GetCTOTScore());
-		}
+		PrintToConsole(client, "%s %s: [%d] %s: [%d] MR%d",Prefix ,g_t_name, GetTTotalScore(), g_ct_name, GetCTTotalScore(), GetConVarInt(g_h_max_rounds));
 	}
 	else
 	{
@@ -1363,32 +1347,15 @@ DisplayScore(client, msgindex, bool:priv)
 		return;
 	}
 	
-	if (msgindex == 0) // standard play score
+	if (msgindex == 0 || msgindex == 1) // standard play score
 	{
-		new String:score_msg[192];
-		GetScoreMsg(client, score_msg, sizeof(score_msg), GetTScore(), GetCTScore());
 		if (priv)
 		{
-	//		CPrintToChat(client, "{darkred}%s {white}%s",Prefix ,score_msg);
-			CPrintToChat(client, "{darkred}%s {red}%s: {aliceblue}[%d] {fullblue}%s: {aliceblue}[%d]",Prefix ,g_t_name, GetTScore(), g_ct_name, GetCTScore()); 
+			CPrintToChat(client, "{darkred}%s {red}%s: {aliceblue}[%d] {fullblue}%s: {aliceblue}[%d]",Prefix ,g_t_name, GetTTotalScore(), g_ct_name, GetCTTotalScore()); 
 		}
 		else
 		{
-	//		CPrintToChatAll("{darkred}%s {white}%s",Prefix ,score_msg);
-			CPrintToChatAll("{darkred}%s {red}%s: {aliceblue}[%d] {fullblue}%s: {aliceblue}[%d]",Prefix ,g_t_name, GetTScore(), g_ct_name, GetCTScore()); 
-		}
-	}
-	else if (msgindex == 1) // overtime play score
-	{
-		new String:score_msg[192];
-		GetScoreMsg(client, score_msg, sizeof(score_msg), GetTOTScore(), GetCTOTScore());
-		if (priv)
-		{
-			CPrintToChat(client, "{darkred}%s {white}%t%s",Prefix ,"Score Overtime", score_msg);
-		}
-		else
-		{
-			CPrintToChatAll("{darkred}%s {white}%t%s",Prefix ,"Score Overtime", score_msg);
+			CPrintToChatAll("{darkred}%s {red}%s: {aliceblue}[%d] {fullblue}%s: {aliceblue}[%d]",Prefix ,g_t_name, GetTTotalScore(), g_ct_name, GetCTTotalScore()); 
 		}
 	}
 	else if (msgindex == 2) // overall play score
@@ -2614,13 +2581,11 @@ AddScore(team)
 		{
 			if (g_first_half)
 			{
-				g_scores_overtime[SCORE_T][g_overtime_count][SCORE_FIRST_HALF]++;
-				g_scores[SCORE_T][SCORE_FIRST_HALF]++;
+				g_scores_overtime[SCORE_T][g_overtime_count][SCORE_FIRST_HALF]++;	
 			}
 			else
 			{
 				g_scores_overtime[SCORE_T][g_overtime_count][SCORE_SECOND_HALF]++;
-				g_scores[SCORE_T][SCORE_SECOND_HALF]++;
 			}
 		}
 		
@@ -2629,12 +2594,10 @@ AddScore(team)
 			if (g_first_half)
 			{
 				g_scores_overtime[SCORE_CT][g_overtime_count][SCORE_FIRST_HALF]++;
-				g_scores[SCORE_CT][SCORE_FIRST_HALF]++;
 			}
 			else
 			{
 				g_scores_overtime[SCORE_CT][g_overtime_count][SCORE_SECOND_HALF]++;
-				g_scores[SCORE_CT][SCORE_SECOND_HALF]++;
 			}
 		}
 	}
@@ -4342,6 +4305,10 @@ public Action:SayChat(client, args)
 				CPrintToChat(client, "{darkred}%s {white}%t",Prefix ,"ShowInfo Disabled");
 			}
 		}
+		else if (StrEqual(command, "mvp", false))
+		{
+			return Plugin_Handled;
+		}
 		else if (StrEqual(command, "help", false))
 		{
 			DisplayHelp(client);
@@ -4428,6 +4395,10 @@ public Action:SayTeamChat(client, args)
 				{
 					CPrintToChat(client, "{darkred}%s {white}%t",Prefix ,"ShowInfo Disabled");
 				}
+				return Plugin_Handled;
+			}
+			else if (StrEqual(command, "mvp", false))
+			{
 				return Plugin_Handled;
 			}
 			else if (StrEqual(command, "help", false))
@@ -4965,17 +4936,11 @@ public MenuHandler(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id
 		}
 		else if (action == TopMenuAction_SelectOption)
 		{
-			int count = 0;
 			for (int i=1; i<=MaxClients; i++)
 			{
-				if (IsClientConnected(i) && !IsClientObserver(i))
-				{
-					ChangeClientTeam(i, 1);
-					count++;
-				}
+				ChangeClientTeam(i, CS_TEAM_SPECTATOR);
 			}
-			if (count>0)
-				CPrintToChatAll("{darkred}%s: {aqua}%t",Prefix ,"Forced Spectate");
+			CPrintToChatAll("{darkred}%s: {aqua}%t",Prefix ,"Forced Spectate");
 		}
 	}
 	else if (StrEqual(menu_name, "team"))
@@ -5163,7 +5128,7 @@ public int MenuHandle_Options(Menu menu, MenuAction action, int param1, int para
 	{
 		char info[64];
 		menu.GetItem(param2, info, sizeof(info));
-
+		
 		int i=0;
 		char stm[64] = "n";
 		while (!StrEqual(info, stm))
@@ -5357,6 +5322,7 @@ public Action:ShowPluginInfo(Handle:timer, any:client)
 		PrintToConsole(client, "  /unready - Para marcar que no estas preparado	  /notready /unrdy /notrdy /ur /nr");
 		PrintToConsole(client, "  /info - Muestra informacion del sistema /ready	  /i");
 		PrintToConsole(client, "  /scores - Muestra las puntuaciones actuales 	  /score /s");
+		PrintToConsole(client, "  /mvp - Muestra el jugador más valorado de la partida");
 		PrintToConsole(client, "");
 		PrintToConsole(client, "Configuraciones actuales: %s: %d / %s: %d / %s: %d", max_rounds, GetConVarInt(g_h_max_rounds), min_ready, GetConVarInt(g_h_min_ready), play_out, GetConVarBool(g_h_play_out));
 		PrintToConsole(client, "==============================================================");

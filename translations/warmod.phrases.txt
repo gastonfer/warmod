@@ -141,7 +141,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"{1} are winning"
-		"es"			"{1} están ganando"
+		"es"			"{1} han ganado"
 	}
 	"Tied"
 	{
@@ -152,7 +152,7 @@
 	{
 		"#format"		"{1:s}"
 		"en"			"{1} are winning"
-		"es"			"{1} están ganando"
+		"es"			"{1} han ganado"
 	}
 	"Change Teams Midgame"
 	{
@@ -234,8 +234,8 @@
 	}
 	"Console"
 	{
-		"en"			"{aqua}ATVICIADA: "
-		"es"			"{aqua}ATVICIADA: "
+		"en"			"{aqua}Console: "
+		"es"			"{aqua}Consola: "
 	}
 	"Available Commands"
 	{

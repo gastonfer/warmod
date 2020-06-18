@@ -43,7 +43,7 @@
 #define CLUTCH_WON         3
 #define CLUTCH_NUM         4
 
-#define WM_VERSION "3.0.11 - Edited by El Nick"
+#define WM_VERSION "3.0.35 - Edited by El Nick"
 #define WM_DESCRIPTION "An automative service created by Twelve-60 of GameTech (www.gametech.com.au) for CS:S competition matches"
 
 
