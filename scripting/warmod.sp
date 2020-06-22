@@ -94,6 +94,8 @@ new Handle:g_h_half_auto_ready = INVALID_HANDLE;
 new Handle:g_h_auto_kick_team = INVALID_HANDLE;
 new Handle:g_h_auto_kick_delay = INVALID_HANDLE;
 new Handle:g_h_score_mode = INVALID_HANDLE;
+new Handle:g_h_custom_hostname = INVALID_HANDLE;
+new Handle:g_h_hostname = INVALID_HANDLE;
 new Handle:g_h_overtime = INVALID_HANDLE;
 new Handle:g_h_overtime_mr = INVALID_HANDLE;
 new Handle:g_h_overtime_money = INVALID_HANDLE;
@@ -292,6 +294,8 @@ public OnPluginStart()
 	g_h_auto_kick_team = CreateConVar("wm_auto_kick_team", "0", "Enable or disable the automatic kicking of the losing team", FCVAR_NOTIFY);
 	g_h_auto_kick_delay = CreateConVar("wm_auto_kick_delay", "10", "Sets the seconds to wait before kicking the losing team", FCVAR_NOTIFY, true, 0.0);
 	g_h_score_mode = CreateConVar("wm_score_mode", "1", "Sets score mode: 1 = Best Of, 2 = First To (based on wm_max_rounds)", FCVAR_NOTIFY);
+	g_h_custom_hostname = CreateConVar("wm_custom_hostname", "1", "Sets the score on hostname", FCVAR_NOTIFY, true, 0.0);
+	g_h_hostname = CreateConVar("wm_hostname" ,"&prefix [MIX EN PROGRESO (&score)]", "Sets the hostname for wm_custom_hostname (&prefix the prefix of WM_PREFIX and %score is the mix score. Remove &prefix to put a custom prefix name)");
 	g_h_overtime = CreateConVar("wm_overtime", "1", "Sets overtime mode: 0 = off, 1 = Maxrounds (based on wm_overtime_max_rounds), 2 = Sudden Death", FCVAR_NOTIFY);
 	g_h_overtime_mr = CreateConVar("wm_overtime_max_rounds", "3", "Sets overtime maxrounds", FCVAR_NOTIFY, true, 0.0);
 	g_h_overtime_money = CreateConVar("wm_overtime_start_money", "10000", "Sets overtime startmoney", FCVAR_NOTIFY, true, 0.0);
@@ -1733,6 +1737,11 @@ public Event_Round_End(Handle:event, const String:name[], bool:dontBroadcast)
 		UpdateStatus();
 	}
 	
+	if(GetConVarBool(g_h_custom_hostname))
+	{
+		UpdateHostname();
+	}
+	
 	if (GetConVarInt(g_h_showmvp) == 1 && g_live)
 	{
 		new max=0;
@@ -1766,6 +1775,23 @@ public Event_Round_End(Handle:event, const String:name[], bool:dontBroadcast)
 		}
 	}
 	
+}
+
+public Action:UpdateHostname()
+{
+	char hostname[512], sScore[64];
+	GetConVarString(g_h_hostname, hostname, sizeof(hostname));
+	if (StrContains(hostname, "&prefix") != -1)
+	{
+		ReplaceString(hostname, sizeof(hostname), "&prefix", Prefix);
+	}
+	if (StrContains(hostname, "&score") != -1)
+	{
+		Format(sScore, sizeof(sScore), "%d-%d", GetTTotalScore(), GetCTTotalScore());
+		ReplaceString(hostname, sizeof(hostname), "&score", sScore);
+	}
+	ConVar svhostname = FindConVar("hostname");
+	SetConVarString(svhostname, hostname, false);
 }
 
 public Action:Command_Prefix(client,args)
@@ -3418,10 +3444,18 @@ LiveOn3(bool:e_war)
 	{
 		Log2Game("\"live_on_3\" (map \"%s\") (t \"%s\") (ct \"%s\") (status \"%d\") (version \"%s\")", g_map, g_t_name, g_ct_name, UpdateStatus(), WM_VERSION);
 	}
+	if (GetConVarBool(g_h_custom_hostname))
+	{
+		UpdateHostname();
+	}
 }
 
 stock LiveOn3Override()
 {
+	if(GetTTotalScore() > 0 || GetCTTotalScore() > 0)
+	{
+		CreateTimer(10.0, SetTeamScores);
+	}
 	new Handle:kv = CreateKeyValues("live_override");
 	new String:path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "configs/warmod_live_override.txt");
@@ -3487,6 +3521,15 @@ stock LiveOn3Override()
 	return true;
 }
 
+public Action:SetTeamScores(Handle timer)
+{
+	CS_SetTeamScore(CS_TEAM_T, GetTTotalScore());
+	CS_SetTeamScore(CS_TEAM_CT, GetCTTotalScore());
+	SetTeamScore(CS_TEAM_T, GetTTotalScore());
+	SetTeamScore(CS_TEAM_CT, GetCTTotalScore());
+	return Plugin_Stop;
+}
+
 public Action:GetTeamsNames()
 {
 	decl String:TRName[MAX_NAME_LENGTH];
@@ -3510,15 +3553,6 @@ public Action:GetTeamsNames()
 		}
 		if (!StrEqual("none", CTName) && !StrEqual("none", TRName))
 		{
-		/*	//Adds team_x to player names
-			decl String:help[32];
-			help = "team_";
-			StrCat(help, sizeof(help), CTName);
-			strcopy(CTName, sizeof(CTName), help);
-			help = "team_";
-			StrCat(help, sizeof(help), TRName);
-			strcopy(TRName, sizeof(TRName), help);
-		*/	
 			g_ct_name = CTName;
 			g_t_name = TRName;
 			stop = true;
