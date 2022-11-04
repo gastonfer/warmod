@@ -10,14 +10,15 @@
 #undef REQUIRE_PLUGIN
 #include <adminmenu>
 #include <autoupdate>
+#include <utilities>
 
 //menu
 TopMenu aTopMenu;
 
 /* player info */
 new g_player_list[MAXPLAYERS + 1];
-new bool:g_cancel_list[MAXPLAYERS + 1];
-new String:user_damage[MAXPLAYERS + 1][DMG_MSG_SIZE];
+bool g_cancel_list[MAXPLAYERS + 1];
+char user_damage[MAXPLAYERS + 1][DMG_MSG_SIZE];
 
 new g_scores[2][2];
 new g_scores_overtime[2][256][2];
@@ -28,9 +29,9 @@ new g_i_account = -1;
 new g_i_frags = -1;
 
 /* miscellaneous */
-new String:g_map[64];
-new Float:g_match_start;
-new String:Prefix[64];
+char g_map[64];
+float g_match_start;
+char Prefix[64];
 new ko3starttimer = 6;
 
 // MVP 
@@ -39,133 +40,133 @@ new g_ScoresOfTheGame[MAXPLAYERS+1] = {0, ...};
 new g_DeathsOfTheGame[MAXPLAYERS+1] = {0, ...};
 
 /* stats */
-new bool:g_log_warmod_dir = false;
-new String:g_log_filename[128];
-new Handle:g_log_file = INVALID_HANDLE;
-new String:weapon_list[][] =
+bool g_log_warmod_dir = false;
+char g_log_filename[128];
+Handle g_log_file = INVALID_HANDLE;
+char weapon_list[][] =
 {"ak47","m4a1","awp","deagle","mp5navy","aug","p90","famas","galil","scout","g3sg1","hegrenade","usp", "glock","m249","m3","elite","fiveseven","mac10","p228","sg550","sg552","tmp","ump45","xm1014","knife","smokegrenade","flashbang"};
 new weapon_stats[MAXPLAYERS + 1][NUM_WEAPONS][LOG_HIT_NUM];
 new clutch_stats[MAXPLAYERS + 1][CLUTCH_NUM];
-new String:last_weapon[MAXPLAYERS + 1][64];
-new bool:g_planted = false;
-new Handle:g_stats_trace_timer = INVALID_HANDLE;
+char last_weapon[MAXPLAYERS + 1][64];
+bool g_planted = false;
+Handle g_stats_trace_timer = INVALID_HANDLE;
 
 /* forwards */
-new Handle:g_f_on_lo3 = INVALID_HANDLE;
-new Handle:g_f_on_half_time = INVALID_HANDLE;
-new Handle:g_f_on_reset_half = INVALID_HANDLE;
-new Handle:g_f_on_reset_match = INVALID_HANDLE;
-new Handle:g_f_on_end_match = INVALID_HANDLE;
+Handle g_f_on_lo3 = INVALID_HANDLE;
+Handle g_f_on_half_time = INVALID_HANDLE;
+Handle g_f_on_reset_half = INVALID_HANDLE;
+Handle g_f_on_reset_match = INVALID_HANDLE;
+Handle g_f_on_end_match = INVALID_HANDLE;
 
 /* cvars */
-new Handle:g_h_lw_enabled = INVALID_HANDLE;
-new Handle:g_h_lw_address = INVALID_HANDLE;
-new Handle:g_h_lw_port = INVALID_HANDLE;
-new Handle:g_h_lw_group_name = INVALID_HANDLE;
-new Handle:g_h_lw_group_password = INVALID_HANDLE;
-new Handle:g_h_fade_to_black = INVALID_HANDLE;
-new Handle:g_h_active = INVALID_HANDLE;
-new Handle:g_h_stats_enabled = INVALID_HANDLE;
-new Handle:g_h_stats_method = INVALID_HANDLE;
-new Handle:g_h_stats_trace_enabled = INVALID_HANDLE;
-new Handle:g_h_stats_trace_delay = INVALID_HANDLE;
-new Handle:g_h_rcon_only = INVALID_HANDLE;
-new Handle:g_h_global_chat = INVALID_HANDLE;
-new Handle:g_h_locked = INVALID_HANDLE;
-new Handle:g_h_min_ready = INVALID_HANDLE;
-new Handle:g_h_max_players = INVALID_HANDLE;
-new Handle:g_h_match_config = INVALID_HANDLE;
-new Handle:g_h_live_config = INVALID_HANDLE;
-new Handle:g_h_end_config = INVALID_HANDLE;
-new Handle:g_h_round_money = INVALID_HANDLE;
-new Handle:g_h_night_vision = INVALID_HANDLE;
-new Handle:g_h_bomb_frags = INVALID_HANDLE;
-new Handle:g_h_defuse_frags = INVALID_HANDLE;
-new Handle:g_h_ingame_scores = INVALID_HANDLE;
-new Handle:g_h_max_rounds = INVALID_HANDLE;
-new Handle:g_h_warm_up_grens = INVALID_HANDLE;
-new Handle:g_h_req_names = INVALID_HANDLE;
-new Handle:g_h_show_info = INVALID_HANDLE;
-new Handle:g_h_live_override = INVALID_HANDLE;
-new Handle:g_h_auto_ready = INVALID_HANDLE;
-new Handle:g_h_auto_swap = INVALID_HANDLE;
-new Handle:g_h_auto_swap_delay = INVALID_HANDLE;
-new Handle:g_h_half_auto_ready = INVALID_HANDLE;
-new Handle:g_h_auto_kick_team = INVALID_HANDLE;
-new Handle:g_h_auto_kick_delay = INVALID_HANDLE;
-new Handle:g_h_score_mode = INVALID_HANDLE;
-new Handle:g_h_custom_hostname = INVALID_HANDLE;
-new Handle:g_h_hostname = INVALID_HANDLE;
-new Handle:g_h_overtime = INVALID_HANDLE;
-new Handle:g_h_overtime_mr = INVALID_HANDLE;
-new Handle:g_h_overtime_money = INVALID_HANDLE;
-new Handle:g_h_auto_record = INVALID_HANDLE;
-new Handle:g_h_save_file_dir = INVALID_HANDLE;
-new Handle:g_h_prefix_logs = INVALID_HANDLE;
-new Handle:g_h_play_out = INVALID_HANDLE;
-new Handle:g_h_damage = INVALID_HANDLE;
-new Handle:g_h_remove_hint_text = INVALID_HANDLE;
-new Handle:g_h_remove_gren_sound = INVALID_HANDLE;
-new Handle:g_h_body_delay = INVALID_HANDLE;
-new Handle:g_h_body_remove = INVALID_HANDLE;
-new Handle:g_h_warmup_respawn = INVALID_HANDLE;
-new Handle:g_h_modifiers = INVALID_HANDLE;
-new Handle:g_h_status = INVALID_HANDLE;
-new Handle:g_h_upload_results = INVALID_HANDLE;
-new Handle:g_h_table_name = INVALID_HANDLE;
-new Handle:g_h_t = INVALID_HANDLE;
-new Handle:g_h_ct = INVALID_HANDLE;
-new Handle:g_h_notify_version = INVALID_HANDLE;
-new Handle:g_h_t_score = INVALID_HANDLE;
-new Handle:g_h_ct_score = INVALID_HANDLE;
-new Handle:g_h_chat_prefix = INVALID_HANDLE;
-new Handle:g_h_knife_round_enable = INVALID_HANDLE;
-new Handle:g_h_knife_winner_panel = INVALID_HANDLE;
-new Handle:g_h_ko3timer = INVALID_HANDLE;
-new Handle:g_h_force_on_knife_win = INVALID_HANDLE;
-new Handle:g_h_mix_automated = INVALID_HANDLE;
-new Handle:g_h_showmvp = INVALID_HANDLE;
-new Handle:g_h_team_names = INVALID_HANDLE;
+Handle g_h_lw_enabled = INVALID_HANDLE;
+Handle g_h_lw_address = INVALID_HANDLE;
+Handle g_h_lw_port = INVALID_HANDLE;
+Handle g_h_lw_group_name = INVALID_HANDLE;
+Handle g_h_lw_group_password = INVALID_HANDLE;
+Handle g_h_fade_to_black = INVALID_HANDLE;
+Handle g_h_active = INVALID_HANDLE;
+Handle g_h_stats_enabled = INVALID_HANDLE;
+Handle g_h_stats_method = INVALID_HANDLE;
+Handle g_h_stats_trace_enabled = INVALID_HANDLE;
+Handle g_h_stats_trace_delay = INVALID_HANDLE;
+Handle g_h_rcon_only = INVALID_HANDLE;
+Handle g_h_global_chat = INVALID_HANDLE;
+Handle g_h_locked = INVALID_HANDLE;
+Handle g_h_min_ready = INVALID_HANDLE;
+Handle g_h_max_players = INVALID_HANDLE;
+Handle g_h_match_config = INVALID_HANDLE;
+Handle g_h_live_config = INVALID_HANDLE;
+Handle g_h_end_config = INVALID_HANDLE;
+Handle g_h_round_money = INVALID_HANDLE;
+Handle g_h_night_vision = INVALID_HANDLE;
+Handle g_h_bomb_frags = INVALID_HANDLE;
+Handle g_h_defuse_frags = INVALID_HANDLE;
+Handle g_h_ingame_scores = INVALID_HANDLE;
+Handle g_h_max_rounds = INVALID_HANDLE;
+Handle g_h_warm_up_grens = INVALID_HANDLE;
+Handle g_h_req_names = INVALID_HANDLE;
+Handle g_h_show_info = INVALID_HANDLE;
+Handle g_h_live_override = INVALID_HANDLE;
+Handle g_h_auto_ready = INVALID_HANDLE;
+Handle g_h_auto_swap = INVALID_HANDLE;
+Handle g_h_auto_swap_delay = INVALID_HANDLE;
+Handle g_h_half_auto_ready = INVALID_HANDLE;
+Handle g_h_auto_kick_team = INVALID_HANDLE;
+Handle g_h_auto_kick_delay = INVALID_HANDLE;
+Handle g_h_score_mode = INVALID_HANDLE;
+Handle g_h_custom_hostname = INVALID_HANDLE;
+Handle g_h_hostname = INVALID_HANDLE;
+Handle g_h_overtime = INVALID_HANDLE;
+Handle g_h_overtime_mr = INVALID_HANDLE;
+Handle g_h_overtime_money = INVALID_HANDLE;
+Handle g_h_auto_record = INVALID_HANDLE;
+Handle g_h_save_file_dir = INVALID_HANDLE;
+Handle g_h_prefix_logs = INVALID_HANDLE;
+Handle g_h_play_out = INVALID_HANDLE;
+Handle g_h_damage = INVALID_HANDLE;
+Handle g_h_remove_hint_text = INVALID_HANDLE;
+Handle g_h_remove_gren_sound = INVALID_HANDLE;
+Handle g_h_body_delay = INVALID_HANDLE;
+Handle g_h_body_remove = INVALID_HANDLE;
+Handle g_h_warmup_respawn = INVALID_HANDLE;
+Handle g_h_modifiers = INVALID_HANDLE;
+Handle g_h_status = INVALID_HANDLE;
+Handle g_h_upload_results = INVALID_HANDLE;
+Handle g_h_table_name = INVALID_HANDLE;
+Handle g_h_t = INVALID_HANDLE;
+Handle g_h_ct = INVALID_HANDLE;
+Handle g_h_notify_version = INVALID_HANDLE;
+Handle g_h_t_score = INVALID_HANDLE;
+Handle g_h_ct_score = INVALID_HANDLE;
+Handle g_h_chat_prefix = INVALID_HANDLE;
+Handle g_h_knife_round_enable = INVALID_HANDLE;
+Handle g_h_knife_winner_panel = INVALID_HANDLE;
+Handle g_h_ko3timer = INVALID_HANDLE;
+Handle g_h_force_on_knife_win = INVALID_HANDLE;
+Handle g_h_mix_automated = INVALID_HANDLE;
+Handle g_h_showmvp = INVALID_HANDLE;
+Handle g_h_team_names = INVALID_HANDLE;
 
 
-new Handle:g_h_mp_startmoney = INVALID_HANDLE;
+Handle g_h_mp_startmoney = INVALID_HANDLE;
 
 /* ready system */
-new Handle:g_m_ready_up = INVALID_HANDLE;
-new bool:g_ready_enabled = false;
+Handle g_m_ready_up = INVALID_HANDLE;
+bool g_ready_enabled = false;
 
 /* switches */
-new bool:g_active = true;
-new bool:g_match = false;
-new bool:g_live = false;
-new bool:g_playing_out = false;
-new bool:g_first_half = true;
-new bool:g_overtime = false;
-new bool:g_t_money = false;
-new bool:g_t_score = false;
-new bool:round_end = false;
-new bool:Ko3Running = false;
-new bool:Ko3Msg = true;
-new bool:isBuyZoneDisabled = false;
-new bool:forced = false;
+bool g_active = true;
+bool g_match = false;
+bool g_live = false;
+bool g_playing_out = false;
+bool g_first_half = true;
+bool g_overtime = false;
+bool g_t_money = false;
+bool g_t_score = false;
+bool round_end = false;
+bool Ko3Running = false;
+bool Ko3Msg = true;
+bool isBuyZoneDisabled = false;
+bool forced = false;
 
 /* livewire */
-new Handle:g_h_lw_socket = INVALID_HANDLE;
-new bool:g_lw_connecting = false;
-new bool:g_lw_connected = false;
+Handle g_h_lw_socket = INVALID_HANDLE;
+bool g_lw_connecting = false;
+bool g_lw_connected = false;
 
 /* modes */
 new g_overtime_mode = 0;
 
 /* teams */
-new String:g_t_name[64];
-new String:g_ct_name[64];
+char g_t_name[MAX_NAME_LENGTH+1];
+char g_ct_name[MAX_NAME_LENGTH+1];
 
 /* admin menu */
-new Handle:g_h_menu = INVALID_HANDLE;
+Handle g_h_menu = INVALID_HANDLE;
 
 /* database */
-new Handle:wm_db = INVALID_HANDLE;
+Handle wm_db = INVALID_HANDLE;
 
 public Plugin:myinfo = {
 	name = "GameTech WarMod",
@@ -184,7 +185,7 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 public OnPluginStart()
 {
 	LoadTranslations("warmod.phrases");
-	new Handle:topmenu;
+	Handle topmenu;
 	if (LibraryExists("adminmenu") && ((topmenu = GetAdminTopMenu()) != INVALID_HANDLE))
 	{
 		OnAdminMenuReady(topmenu);
@@ -329,8 +330,8 @@ public OnPluginStart()
 	
 	g_h_mp_startmoney = FindConVar("mp_startmoney");
 	
-	g_i_account = FindSendPropOffs("CCSPlayer", "m_iAccount");
-	g_i_ragdolls = FindSendPropOffs("CCSPlayer","m_hRagdoll");
+	g_i_account = FindSendPropInfo("CCSPlayer", "m_iAccount");
+	g_i_ragdolls = FindSendPropInfo("CCSPlayer","m_hRagdoll");
 	
 	GetConVarString(g_h_chat_prefix, Prefix, sizeof(Prefix));
 	
@@ -418,7 +419,7 @@ LiveWire_Connect()
 	if (!g_lw_connecting)
 	{
 		g_h_lw_socket = SocketCreate(SOCKET_TCP, OnSocketError);
-		new String:address[32];
+		char address[32];
 		GetConVarString(g_h_lw_address, address, sizeof(address));
 		new port = GetConVarInt(g_h_lw_port);
 		PrintToServer("<LiveWire> Connecting to \"%s:%d\"", address, port);
@@ -453,11 +454,11 @@ public OnSocketConnected(Handle:socket, any:arg)
 	g_lw_connecting = false;
 	g_lw_connected = true;
 	PrintToServer("<LiveWire> Connected");
-	new String:username[64];
-	new String:password[512];
+	char username[64];
+	char password[512];
 	GetConVarString(g_h_lw_group_name, username, sizeof(username));
 	GetConVarString(g_h_lw_group_password, password, sizeof(password));
-	new String:timestamp[64];
+	char timestamp[64];
 	FormatTime(timestamp, sizeof(timestamp), "%Y-%m-%d %H:%M:%S");
 	LiveWire_Send("\"server_status\" (game \"css\") (ip \"%d\") (port \"%d\") (username \"%s\") (password \"%s\") (timestamp \"%s\")", GetConVarInt(FindConVar("hostip")), GetConVarInt(FindConVar("hostport")), username, password, timestamp);
 }
@@ -475,11 +476,11 @@ public OnSocketDisconnected(Handle:socket, any:arg)
 	PrintToServer("<LiveWire> Disconnected");
 }
 
-public OnSocketError(Handle:socket, const errorType, const errorNum, any:hFile)
+public void OnSocketError(Handle socket, const char[] errorType, int errorNum, any arg)
 {
 	g_lw_connecting = false;
 	g_lw_connected = false;
-	LogError("GameTech LiveWire - Socket error %d (errno %d)", errorType, errorNum);
+	LogError("GameTech LiveWire - Socket error %s (errno %d)", errorType, errorNum);
 	CloseHandle(socket);
 }
 
@@ -595,7 +596,7 @@ ResetMatch(bool:silent)
 			Log2Game("\"match_reset\"");
 		}
 		LiveWire_Send("\"log_end\"");
-		new String:end_config[128];
+		char end_config[128];
 		GetConVarString(g_h_end_config, end_config, sizeof(end_config));
 		ServerCommand("exec %s", end_config);
 	}
@@ -654,8 +655,10 @@ public Action Event_Player_Spawn(Handle:event, char[] name, bool dontBroadcast)
 		{
 			SetEntProp(c, Prop_Data, "m_iFrags", g_ScoresOfTheGame[c]);
 			SetEntProp(c, Prop_Data, "m_iDeaths", g_DeathsOfTheGame[c]);
+			return Plugin_Changed;
 		}
 	}
+	return Plugin_Continue;
 } 
 
 ResetHalf(bool:silent)
@@ -859,7 +862,7 @@ public Action:ChangeMinReady(client, args)
 		return Plugin_Handled;
 	}
 	
-	new String:arg[128];
+	char arg[128];
 	new minready;
 	
 	if (GetCmdArgs() > 0)
@@ -904,7 +907,7 @@ public Action:ChangeMaxRounds(client, args)
 		return Plugin_Handled;
 	}
 	
-	new String:arg[128];
+	char arg[128];
 	new maxrounds;
 	
 	if (GetCmdArgs() > 0)
@@ -949,7 +952,7 @@ public Action:ChangePassword(client, args)
 		return Plugin_Handled;
 	}
 	
-	new String:new_password[128];
+	char new_password[128];
 	
 	if (GetCmdArgs() > 0)
 	{
@@ -969,7 +972,7 @@ public Action:ChangePassword(client, args)
 	}
 	else
 	{
-		new String:passwd[128];
+		char passwd[128];
 		GetConVarString(FindConVar("sv_password"), passwd, sizeof(passwd));
 		if (client != 0)
 		{
@@ -1364,7 +1367,7 @@ DisplayScore(client, msgindex, bool:priv)
 	}
 	else if (msgindex == 2) // overall play score
 	{
-		new String:score_msg[192];
+		char score_msg[192];
 		GetScoreMsg(client, score_msg, sizeof(score_msg), GetTTotalScore(), GetCTTotalScore());
 		if (priv)
 		{
@@ -1478,9 +1481,9 @@ public Event_Round_Start(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	SortCustom1D(the_money, num_players, SortMoney);
 	
-	new String:player_name[32];
-	new String:player_money[10];
-	new String:has_weapon[1];
+	char player_name[32];
+	char player_money[10];
+	char has_weapon[2];
 	new pri_weapon;
 	
 	for (new i = 1; i <= MaxClients; i++)
@@ -1619,9 +1622,9 @@ stock ShowTeamMoney(client)
 	
 	SortCustom1D(the_money, num_players, SortMoney);
 	
-	new String:player_name[32];
-	new String:player_money[10];
-	new String:has_weapon[1];
+	char player_name[32];
+	char player_money[10];
+	char has_weapon[2];
 	new pri_weapon;
 	
 	CPrintToChat(client, "\x01--------");
@@ -1662,7 +1665,7 @@ public Event_Round_End(Handle:event, const String:name[], bool:dontBroadcast)
 			decl String:No[128];
 			Format(Yes,sizeof(Yes),"%t","ko3win_election_yes");
 			Format(No,sizeof(No),"%t","ko3win_election_no");
-			new Handle:switchteams = CreateMenu(Handle_TeamsVoteMenu);
+			Handle switchteams = CreateMenu(Handle_TeamsVoteMenu);
 			new win_team = GetEventInt(event, "winner");
 			if (win_team == CS_TEAM_T)
 			{
@@ -1744,9 +1747,9 @@ public Event_Round_End(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarInt(g_h_showmvp) == 1 && g_live)
 	{
-		new max=0;
-		new winnerIndex = -1;
-		for (new i=1; i<=MaxClients;i++)
+		int max=0;
+		int winnerIndex = -1;
+		for (int i=1; i<=MaxClients;i++)
 		{
 			if (IsClientConnected(i))
 			{
@@ -1757,21 +1760,23 @@ public Event_Round_End(Handle:event, const String:name[], bool:dontBroadcast)
 				}
 			}
 		}
-		decl String:attackerName[32];
-		GetClientName(winnerIndex, attackerName, sizeof(attackerName));
-		new kills = max;
-		
-		if (kills == 5)
-		{
-			CPrintToChatAll("{darkred}%s:{aqua} %t", Prefix,"MVP_ACE" ,attackerName, kills);
-		}
-		else if (kills == 4)
-		{
-			CPrintToChatAll("{darkred}%s:{aqua} %t", Prefix,"MVP_4K" ,attackerName, kills);
-		}
-		else if (kills == 3)
-		{
-			CPrintToChatAll("{darkred}%s:{aqua} %t", Prefix,"MVP_3K" ,attackerName, kills);
+		if(winnerIndex > 0){
+			char attackerName[MAX_NAME_LENGTH+1];
+			GetClientName(winnerIndex, attackerName, sizeof(attackerName));
+			int kills = max;
+			
+			if (kills == 5)
+			{
+				CPrintToChatAll("{darkred}%s:{aqua} %t", Prefix,"MVP_ACE" ,attackerName, kills);
+			}
+			else if (kills == 4)
+			{
+				CPrintToChatAll("{darkred}%s:{aqua} %t", Prefix,"MVP_4K" ,attackerName, kills);
+			}
+			else if (kills == 3)
+			{
+				CPrintToChatAll("{darkred}%s:{aqua} %t", Prefix,"MVP_3K" ,attackerName, kills);
+			}
 		}
 	}
 	
@@ -1796,7 +1801,7 @@ public Action:UpdateHostname()
 
 public Action:Command_Prefix(client,args)
 {
-	new String:PrefixTemp[32];
+	char PrefixTemp[32];
 	GetCmdArg(1,PrefixTemp, sizeof(PrefixTemp));
 	if (GetCmdArgs() == 0)
 	{
@@ -1860,10 +1865,12 @@ public Action:Command_CancelKo3(client, args)
 			}
 		}
 		Ko3Running = false;
-		CPrintToChat(client, "{darkred}%s:{white} %t", Prefix, "Ko3Cancel");
+		if(client > 0)
+			CPrintToChat(client, "{darkred}%s:{white} %t", Prefix, "Ko3Cancel");
 		return Plugin_Handled;
 	}
-	CPrintToChat(client, "{darkred}%s: {aqua}%t", Prefix, "Ko3CancelCancel");
+	if(client > 0)
+		CPrintToChat(client, "{darkred}%s: {aqua}%t", Prefix, "Ko3CancelCancel");
 	return Plugin_Handled;
 }
 
@@ -2017,7 +2024,7 @@ public Event_Player_Blind(Handle:event, const String:name[], bool:dontBroadcast)
 		new client = GetClientOfUserId(GetEventInt(event, "userid"));
 		if (client > 0)
 		{
-			new String:log_string[256];
+			char log_string[256];
 			CS_GetAdvLogString(client, log_string, sizeof(log_string));
 			Log2Game("\"player_blind\" (player \"%s\") (duration \"%.2f\")", log_string, GetEntPropFloat(client, Prop_Send, "m_flFlashDuration"));
 		}
@@ -2038,7 +2045,7 @@ public Event_Player_Hurt(Handle:event, const String:name[], bool:dontBroadcast)
 		new damage = GetEventInt(event, "dmg_health");
 		new damage_armor = GetEventInt(event, "dmg_armor");
 		new hitgroup = GetEventInt(event, "hitgroup");
-		new String:weapon[64];
+		char weapon[64];
 		GetEventString(event, "weapon", weapon, 64);
 		
 		if (attacker > 0)
@@ -2048,8 +2055,8 @@ public Event_Player_Hurt(Handle:event, const String:name[], bool:dontBroadcast)
 			{
 				GetClientWeapon(victim, last_weapon[victim], 64);
 				ReplaceString(last_weapon[victim], 64, "weapon_", "");
-				new String:attacker_log_string[256];
-				new String:victim_log_string[256];
+				char attacker_log_string[256];
+				char victim_log_string[256];
 				CS_GetAdvLogString(attacker, attacker_log_string, sizeof(attacker_log_string));
 				CS_GetAdvLogString(victim, victim_log_string, sizeof(victim_log_string));
 				Log2Game("\"player_hurt\" (attacker \"%s\") (victim \"%s\") (weapon \"%s\") (damage \"%d\") (damage_armor \"%d\") (hitgroup \"%d\")", attacker_log_string, victim_log_string, weapon, damage, damage_armor, hitgroup);
@@ -2076,8 +2083,8 @@ public Event_Player_Death(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	new attacker = GetClientOfUserId(GetEventInt(event, "attacker"));
 	new victim = GetClientOfUserId(GetEventInt(event, "userid"));
-	new bool:headshot = GetEventBool(event, "headshot");
-	new String: weapon[64];
+	bool headshot = GetEventBool(event, "headshot");
+	char  weapon[64];
 	GetEventString(event, "weapon", weapon, sizeof(weapon));
 	
 	if (g_live && (GetConVarInt(g_h_showmvp)==1))
@@ -2101,15 +2108,15 @@ public Event_Player_Death(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		if (attacker > 0 && victim > 0 && attacker != victim)
 		{
-			new String:attacker_log_string[256];
-			new String:victim_log_string[256];
+			char attacker_log_string[256];
+			char victim_log_string[256];
 			CS_GetAdvLogString(attacker, attacker_log_string, sizeof(attacker_log_string));
 			CS_GetAdvLogString(victim, victim_log_string, sizeof(victim_log_string));
 			Log2Game("\"player_death\" (attacker \"%s\") (victim \"%s\") (weapon \"%s\") (headshot \"%d\")", attacker_log_string, victim_log_string, weapon, headshot);
 		}
 		else if (victim > 0 && victim == attacker || StrEqual(weapon, "worldspawn"))
 		{
-			new String:log_string[256];
+			char log_string[256];
 			CS_GetAdvLogString(victim, log_string, sizeof(log_string));
 			ReplaceString(weapon, sizeof(weapon), "worldspawn", "world");
 			Log2Game("\"player_suicide\" (player \"%s\") (weapon \"%s\")", log_string, weapon);
@@ -2188,12 +2195,14 @@ public Event_Player_Name(Handle:event, const String:name[], bool:dontBroadcast)
 	{
 		return;
 	}
+	int client = GetClientOfUserId(GetEventInt(event,"userid"));
+	if(!IsClientInGame(client) || IsClientSourceTV(client)){ return; }
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
-		CS_GetLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
-		new String:newname[32];
+		char log_string[256];
+		CS_GetLogString(client, log_string, sizeof(log_string));
+		char newname[32];
 		GetEventString(event, "newname", newname, sizeof(newname));
 		Log2Game("\"player_name\" (player \"%s\") (new_name \"%s\")", log_string, newname);
 	}
@@ -2215,9 +2224,9 @@ public Event_Player_Connect(Handle:event, const String:name[], bool:dontBroadcas
 	
 	if (GetConVarBool(g_h_stats_enabled) && client != 0)
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetLogString(client, log_string, sizeof(log_string));
-		new String:authip[32];
+		char authip[32];
 		GetEventString(event, "address", authip, sizeof(authip));
 		Log2Game("\"player_connect\" (player \"%s\") (address \"%s\")", log_string, authip);
 	}
@@ -2235,9 +2244,9 @@ public Event_Player_Disc(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarBool(g_h_stats_enabled) && client != 0)
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetLogString(client, log_string, sizeof(log_string));
-		new String:reason[128];
+		char reason[128];
 		GetEventString(event, "reason", reason, sizeof(reason));
 		Log2Game("\"player_disconnect\" (player \"%s\") (reason \"%s\")", log_string, reason);
 	}
@@ -2258,7 +2267,7 @@ public Event_Player_Team(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetLogString(client, log_string, sizeof(log_string));
 		Log2Game("\"player_team\" (player \"%s\") (oldteam \"%d\") (newteam \"%d\")", log_string, old_team, new_team);
 	}
@@ -2317,7 +2326,8 @@ public Event_Player_Team(Handle:event, const String:name[], bool:dontBroadcast)
 
 public Action ChangeTeamTime(Handle timer, any client)
 {
-	ChangeClientTeam(client, 1);	
+	ChangeClientTeam(client, 1);
+	return Plugin_Changed;
 }
 
 public Event_Bomb_Exploded(Handle:event, const String:name[], bool:dontBroadcast)
@@ -2330,7 +2340,7 @@ public Event_Bomb_Exploded(Handle:event, const String:name[], bool:dontBroadcast
 	
 	if (g_live && (GetConVarInt(g_h_showmvp)==1))
 	{
-		new bool:flag = false;
+		bool flag = false;
 		for (new i=1; i<=MaxClients; i++)
 		{
 			if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == 3)
@@ -2361,7 +2371,7 @@ public Event_Bomb_PickUp(Handle:event, const String:name[], bool:dontBroadcast) 
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"bomb_pickup\" (player \"%s\")", log_string);
 	}
@@ -2375,7 +2385,7 @@ public Event_Bomb_Dropped(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"bomb_dropped\" (player \"%s\")", log_string);
 	}
@@ -2390,7 +2400,7 @@ public Event_Bomb_Plant_Begin(Handle:event, const String:name[], bool:dontBroadc
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"bomb_plant_begin\" (player \"%s\") (site \"%d\")", log_string, GetEventInt(event, "site"));
 	}
@@ -2403,7 +2413,7 @@ public Event_Bomb_Plant_Abort(Handle:event, const String:name[], bool:dontBroadc
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"bomb_plant_abort\" (player \"%s\") (site \"%d\")", log_string, GetEventInt(event, "site"));
 	}
@@ -2420,7 +2430,7 @@ public Event_Bomb_Planted(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"bomb_planted\" (player \"%s\") (site \"%d\") (origin_x \"%d\") (origin_y \"%d\")", log_string, GetEventInt(event, "site"), GetEventInt(event, "posx"), GetEventInt(event, "posy"));
 	}
@@ -2437,7 +2447,7 @@ public Event_Bomb_Defuse_Begin(Handle:event, const String:name[], bool:dontBroad
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(client, log_string, sizeof(log_string));
 		Log2Game("\"bomb_defuse_begin\" (player \"%s\") (kit \"%d\")", log_string, GetEventInt(event, "site"), GetEventBool(event, "haskit"));
 	}
@@ -2452,7 +2462,7 @@ public Event_Bomb_Defuse_Abort(Handle:event, const String:name[], bool:dontBroad
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"bomb_defuse_abort\" (player \"%s\")", log_string);
 	}
@@ -2477,7 +2487,7 @@ public Event_Bomb_Defused(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(client, log_string, sizeof(log_string));
 		Log2Game("\"bomb_defused\" (player \"%s\") (site \"%d\")", log_string, GetEventInt(event, "site"));
 	}
@@ -2500,7 +2510,7 @@ public Event_Weapon_Fire(Handle:event, const String:name[], bool:dontBroadcast)
 		new client = GetClientOfUserId(GetEventInt(event, "userid"));
 		if (client > 0)
 		{
-			new String: weapon[64];
+			char  weapon[64];
 			GetEventString(event, "weapon", weapon, 64);
 			new weapon_index = GetWeaponIndex(weapon);
 			if (weapon_index > -1)
@@ -2520,7 +2530,7 @@ public Event_Detonate_Flash(Handle:event, const String:name[], bool:dontBroadcas
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"grenade_detonate\" (player \"%s\") (grenade \"flashbang\")", log_string);
 	}
@@ -2535,7 +2545,7 @@ public Event_Detonate_Smoke(Handle:event, const String:name[], bool:dontBroadcas
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"grenade_detonate\" (player \"%s\") (grenade \"smokegrenade\")", log_string);
 	}
@@ -2550,7 +2560,7 @@ public Event_Detonate_HeGrenade(Handle:event, const String:name[], bool:dontBroa
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
 		Log2Game("\"grenade_detonate\" (player \"%s\") (grenade \"hegrenade\")", log_string);
 	}
@@ -2565,9 +2575,9 @@ public Event_Item_Pickup(Handle:event, const String:name[], bool:dontBroadcast)
 	
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetAdvLogString(GetClientOfUserId(GetEventInt(event, "userid")), log_string, sizeof(log_string));
-		new String:item[64];
+		char item[64];
 		GetEventString(event, "item", item, sizeof(item));
 		Log2Game("\"item_pickup\" (player \"%s\") (item \"%s\")", log_string, item);
 	}
@@ -3141,6 +3151,7 @@ public Action:ShowMvp(Handle:timer)
 			}
 		}
 	}
+	if(index <= 0) return;
 	decl String:mvpName[33];
 	GetClientName(index, mvpName, sizeof(mvpName));
 	new kills = g_ScoresOfTheGame[index];
@@ -3265,7 +3276,7 @@ public SortMoney(elem1, elem2, const array[], Handle:hndl)
 
 ReadyServ(client, bool:ready, bool:silent, bool:show, bool:priv)
 {
-	new String:log_string[256];
+	char log_string[256];
 	CS_GetLogString(client, log_string, sizeof(log_string));
 	if (ready)
 	{
@@ -3339,10 +3350,10 @@ LiveOn3(bool:e_war)
 	
 	g_t_score = false;
 	
-	new String:match_config[64];
+	char match_config[64];
 	GetConVarString(g_h_match_config, match_config, sizeof(match_config));
 	
-	new String:live_config[64];
+	char live_config[64];
 	GetConVarString(g_h_live_config, live_config, sizeof(live_config));
 	
 	if (e_war && !StrEqual(match_config, ""))
@@ -3359,15 +3370,15 @@ LiveOn3(bool:e_war)
 	{
 		g_match_start = GetEngineTime();
 		
-		new String:date[32];
+		char date[32];
 		FormatTime(date, sizeof(date), "%Y-%m-%d-%H%M");
 		if (GetConVarInt(g_h_team_names) == 1)
 		{
 			GetTeamsNames();
 		}
 		
-		new String:t_name[64];
-		new String:ct_name[64];
+		char t_name[MAX_NAME_LENGTH+1];
+		char ct_name[MAX_NAME_LENGTH+1];
 		t_name = g_t_name;
 		ct_name = g_ct_name;
 		StripFilename(t_name, sizeof(t_name));
@@ -3383,9 +3394,9 @@ LiveOn3(bool:e_war)
 			Format(g_log_filename, sizeof(g_log_filename), "%s-%s", date, g_map);
 		}
 		
-		new String:save_dir[128];
+		char save_dir[128];
 		GetConVarString(g_h_save_file_dir, save_dir, sizeof(save_dir));
-		new String:file_prefix[1];
+		char file_prefix[2];
 		if (GetConVarBool(g_h_prefix_logs))
 		{
 			file_prefix = "_";
@@ -3407,7 +3418,7 @@ LiveOn3(bool:e_war)
 		
 		if (GetConVarBool(g_h_stats_enabled))
 		{
-			new String:filepath[128];
+			char filepath[128];
 			if (DirExists(save_dir))
 			{
 				Format(filepath, sizeof(filepath), "%s/%s%s.log", save_dir, file_prefix, g_log_filename);
@@ -3456,14 +3467,14 @@ stock LiveOn3Override()
 	{
 		CreateTimer(10.0, SetTeamScores);
 	}
-	new Handle:kv = CreateKeyValues("live_override");
-	new String:path[PLATFORM_MAX_PATH];
+	Handle kv = CreateKeyValues("live_override");
+	char path[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, path, sizeof(path), "configs/warmod_live_override.txt");
 	if (!FileToKeyValues(kv, path))
 	{
 		return false;
 	}
-	new String:text[128];
+	char text[128];
 	new lastdelay;
 	new delay;
 	
@@ -3472,7 +3483,7 @@ stock LiveOn3Override()
 		delay = KvGetNum(kv, "delay");
 		KvGetString(kv, "text", text, sizeof(text));
 		CreateTimer(0.1, RestartRound, delay);
-		new Handle:datapack;
+		Handle datapack;
 		CreateDataTimer(0.9, CPrintToChatDelayed, datapack);
 		WritePackString(datapack, text);
 		lastdelay = delay;
@@ -3483,7 +3494,7 @@ stock LiveOn3Override()
 		delay = KvGetNum(kv, "delay");
 		KvGetString(kv, "text", text, sizeof(text));
 		CreateTimer(float(lastdelay) + 1.3, RestartRound, delay);
-		new Handle:datapack;
+		Handle datapack;
 		CreateDataTimer(float(lastdelay) + 2.0, CPrintToChatDelayed, datapack);
 		WritePackString(datapack, text);
 		lastdelay = lastdelay + delay;
@@ -3494,7 +3505,7 @@ stock LiveOn3Override()
 		delay = KvGetNum(kv, "delay");
 		KvGetString(kv, "text", text, sizeof(text));
 		CreateTimer(float(lastdelay) + 2.5, RestartRound, delay);
-		new Handle:datapack;
+		Handle datapack;
 		CreateDataTimer(float(lastdelay) + 3.5, CPrintToChatDelayed, datapack);
 		WritePackString(datapack, text);
 		lastdelay = lastdelay + delay;
@@ -3502,7 +3513,7 @@ stock LiveOn3Override()
 	}
 	if (KvJumpToKey(kv, "live_finished"))
 	{
-		new String:key[8];
+		char key[8];
 		for (new i = 1; i <= 5; i++)
 		{
 			IntToString(i, key, sizeof(key));
@@ -3511,7 +3522,7 @@ stock LiveOn3Override()
 			KvGetString(kv, key, text, sizeof(text));
 			if (!StrEqual(text, ""))
 			{
-				new Handle:datapack;
+				Handle datapack;
 				CreateDataTimer(float(lastdelay) + 3.5, CPrintToChatDelayed, datapack);
 				WritePackString(datapack, text);
 			}
@@ -3532,33 +3543,44 @@ public Action:SetTeamScores(Handle timer)
 
 public Action:GetTeamsNames()
 {
-	decl String:TRName[MAX_NAME_LENGTH];
-	decl String:CTName[MAX_NAME_LENGTH];
+	char TRName[MAX_NAME_LENGTH];
+	char CTName[MAX_NAME_LENGTH];
 	TRName = "none";
 	CTName = "none";
-	new bool:stop = false;
-	new i=1;
-	while (i<=MaxClients && !stop)
-	{
-		if (IsClientInGame(i) && GetClientTeam(i) > 1)
-		{
-			if (GetClientTeam(i) == 2 && strcmp("none", TRName) == 0)
+
+	//First, try to get TeamNames from utilities plugin
+	int TCap, CTCap = -1;
+	GetTeamCaptains(TCap,CTCap);
+	if(TCap > 0)
+		GetClientName(TCap, TRName,sizeof(TRName));
+	if(CTCap > 0)
+		GetClientName(CTCap, TRName,sizeof(TRName));
+	
+	//Well, cannot get the both captains from utilities plugin
+	if (StrEqual("none", CTName) || StrEqual("none", TRName)){
+		for(int i=1; i<MaxClients; i++){
+			if (IsClientInGame(i) && GetClientTeam(i) > 1)
 			{
-				GetClientName(i, TRName,sizeof(TRName));
+				if (GetClientTeam(i) == 2 && strcmp("none", TRName) == 0)
+				{
+					GetClientName(i, TRName,sizeof(TRName));
+				}
+				if (GetClientTeam(i) == 3 && strcmp("none", CTName) == 0)
+				{
+					GetClientName(i,CTName,sizeof(CTName));
+				}
 			}
-			if (GetClientTeam(i) == 3 && strcmp("none", CTName) == 0)
+			if (!StrEqual("none", CTName) && !StrEqual("none", TRName))
 			{
-				GetClientName(i,CTName,sizeof(CTName));
+				break;
 			}
 		}
-		if (!StrEqual("none", CTName) && !StrEqual("none", TRName))
-		{
-			g_ct_name = CTName;
-			g_t_name = TRName;
-			stop = true;
-		}
-		i++;
 	}
+	if (!StrEqual("none", CTName) && !StrEqual("none", TRName)){
+		g_ct_name = CTName;
+		g_t_name = TRName;
+	}
+	
 }
 
 public Action:AdvertGameTech(Handle:timer, any:client)
@@ -3625,7 +3647,7 @@ public Action:RestrictBuy(client, args)
 		return Plugin_Continue;
 	}
 	
-	new String:arg[128];
+	char arg[128];
 	GetCmdArgString(arg, 128);
 	if (StrEqual(arg, "nvgs", false) && GetConVarBool(g_h_night_vision))
 	{
@@ -3635,7 +3657,7 @@ public Action:RestrictBuy(client, args)
 	
 	if (!g_live && GetConVarBool(g_h_warm_up_grens))
 	{
-		new String:the_weapon[32];
+		char the_weapon[32];
 		Format(the_weapon, sizeof(the_weapon), "%s", arg);
 		ReplaceString(the_weapon, sizeof(the_weapon), "weapon_", "");
 		ReplaceString(the_weapon, sizeof(the_weapon), "item_", "");
@@ -3657,7 +3679,7 @@ public Action:ReadyList(client, args)
 		return Plugin_Handled;
 	}
 	
-	new String:player_name[32];
+	char player_name[32];
 	new player_count;
 	
 	ReplyToCommand(client, "%s %T:",Prefix ,"Ready System", LANG_SERVER);
@@ -3793,7 +3815,7 @@ ShowInfo(client, bool:enable, bool:priv, time)
 	if (!enable)
 	{
 		g_m_ready_up = CreatePanel();
-		new String:panel_title[128];
+		char panel_title[128];
 		Format(panel_title, sizeof(panel_title), "%s %t",Prefix ,"Ready System Disabled", client);
 		SetPanelTitle(g_m_ready_up, panel_title);
 		
@@ -3812,9 +3834,9 @@ ShowInfo(client, bool:enable, bool:priv, time)
 		return;
 	}
 	
-	new String:players_unready[192];
-	new String:player_name[32];
-	new String:player_temp[192];
+	char players_unready[192];
+	char player_name[32];
+	char player_temp[192];
 	
 	for (new i = 1; i <= MaxClients; i++)
 	{
@@ -3845,7 +3867,7 @@ ShowInfo(client, bool:enable, bool:priv, time)
 
 DispInfo(client, String:players_unready[], time)
 {
-	new String:Temp[128];
+	char Temp[128];
 	SetGlobalTransTarget(client);
 	g_m_ready_up = CreatePanel();
 	Format(Temp, sizeof(Temp), "%s - %t\nAdvanced Gaming Modifications",Prefix ,"Ready System");
@@ -4155,7 +4177,7 @@ public Action:ChangeT(client, args)
 		return Plugin_Handled;
 	}
 	
-	new String:name[32];
+	char name[32];
 	
 	if (GetCmdArgs() > 0)
 	{
@@ -4201,7 +4223,7 @@ public Action:ChangeCT(client, args)
 		return Plugin_Handled;
 	}
 	
-	new String:name[32];
+	char name[32];
 	
 	if (GetCmdArgs() > 0)
 	{
@@ -4246,7 +4268,7 @@ public Action:SayChat(client, args)
 	{
 		if (GetConVarBool(g_h_modifiers))
 		{
-			new String:text[192];
+			char text[192];
 			GetCmdArgString(text, sizeof(text));		
 			CPrintToChatAll("\x03%t\x01%s", "Console", text);
 			LogToGame("\"%L\" say \"%s\"", client, text);
@@ -4259,7 +4281,7 @@ public Action:SayChat(client, args)
 	}
 	else
 	{
-		new String:text[192];
+		char text[192];
 		new start_index;
 		GetCmdArgString(text, sizeof(text));
 		
@@ -4273,7 +4295,7 @@ public Action:SayChat(client, args)
 		{
 			if (CheckAdminForChat(client))
 			{
-				new String:message[192];
+				char message[192];
 				strcopy(message, 192, text[start_index + 1]);
 				
 				for (new i = 1; i <= MaxClients; i++)
@@ -4300,10 +4322,10 @@ public Action:SayChat(client, args)
 			msg_start = 1;
 		}
 		
-		new String:message[192];
+		char message[192];
 		strcopy(message, 192, text[start_index + msg_start]);
 		
-		new String:name[64];
+		char name[64];
 		GetClientName(client, name, sizeof(name));
 		
 		if (msg_start == 0)
@@ -4311,8 +4333,8 @@ public Action:SayChat(client, args)
 			return Plugin_Continue;
 		}
 		
-		new String:command[192];
-		new String:split_str[8][32];
+		char command[192];
+		char split_str[8][32];
 		ExplodeString(text[start_index + msg_start], " ", split_str, 8, 32);
 		strcopy(command, 192, split_str[0]);
 		
@@ -4352,7 +4374,7 @@ public Action:SayChat(client, args)
 			return Plugin_Continue;
 		}
 		
-		new String:LogString[192];
+		char LogString[192];
 		CS_GetLogString(client, LogString, sizeof(LogString));
 		LogToGame("\"%s\" say \"%s\"", LogString, text[start_index]);
 		
@@ -4369,7 +4391,7 @@ public Action:SayTeamChat(client, args)
 	
 	if (client != 0 && args != 0)
 	{
-		new String:text[192];
+		char text[192];
 		GetCmdArgString(text, sizeof(text));
 		
 		new start_index;
@@ -4379,7 +4401,7 @@ public Action:SayTeamChat(client, args)
 			start_index = 1;
 		}
 		
-		new String:LogString[192];
+		char LogString[192];
 		CS_GetLogString(client, LogString, sizeof(LogString));
 		
 		LogToGame("\"%s\" say_team \"%s\"", LogString, text[start_index]);
@@ -4391,16 +4413,16 @@ public Action:SayTeamChat(client, args)
 			msg_start = 1;
 		}
 		
-		new String:message[192];
+		char message[192];
 		strcopy(message, 192, text[start_index + msg_start]);
 		
-		new String:client_name[32];
+		char client_name[32];
 		GetClientName(client, client_name, sizeof(client_name));
 		
 		if (msg_start == 1)
 		{
-			new String:command[192];
-			new String:split_str[8][32];
+			char command[192];
+			char split_str[8][32];
 			ExplodeString(text[start_index + msg_start], " ", split_str, 8, 32);
 			strcopy(command, 192, split_str[0]);
 			
@@ -4477,7 +4499,7 @@ SwitchScores()
 
 SwitchTeams()
 {
-	new String:temp[64];
+	char temp[MAX_NAME_LENGTH+1];
 	temp = g_t_name;
 	g_t_name = g_ct_name;
 	SetConVarStringHidden(g_h_t, g_ct_name);
@@ -4622,10 +4644,10 @@ Log2Game(const String:Format[], any:...)
 
 LogPlayers()
 {
-	new String:player_name[32];
-	new String:authid[32];
-	new String:team[32];
-	new String:authip[32];
+	char player_name[32];
+	char authid[32];
+	char team[32];
+	char authip[32];
 	for (new i = 1; i < MaxClients; i++)
 	{
 		if (IsClientInGame(i) && GetClientTeam(i) > 1 && !IsFakeClient(i))
@@ -4656,7 +4678,7 @@ public Action:Stats_Trace(Handle:timer)
 {
 	if (GetConVarBool(g_h_stats_enabled))
 	{
-		new String:log_string[256];
+		char log_string[256];
 		for (new i = 1; i < MaxClients; i++)
 		{
 			if (IsClientInGame(i) && GetClientTeam(i) > 1 && !IsFakeClient(i) && IsPlayerAlive(i))
@@ -4670,14 +4692,14 @@ public Action:Stats_Trace(Handle:timer)
 
 RenameLogs()
 {
-	new String:save_dir[128];
+	char save_dir[128];
 	GetConVarString(g_h_save_file_dir, save_dir, sizeof(save_dir));
 	if (g_log_file != INVALID_HANDLE)
 	{
 		CloseHandle(g_log_file);
 		g_log_file = INVALID_HANDLE;
-		new String:old_log_filename[128];
-		new String:new_log_filename[128];
+		char old_log_filename[128];
+		char new_log_filename[128];
 		if (g_log_warmod_dir)
 		{
 			Format(old_log_filename, sizeof(old_log_filename), "%s/_%s.log", save_dir, g_log_filename);
@@ -4695,10 +4717,10 @@ RenameLogs()
 
 public Action:RenameDemos(Handle:timer)
 {
-	new String:save_dir[128];
+	char save_dir[128];
 	GetConVarString(g_h_save_file_dir, save_dir, sizeof(save_dir));
-	new String:old_demo_filename[128];
-	new String:new_demo_filename[128];
+	char old_demo_filename[128];
+	char new_demo_filename[128];
 	if (g_log_warmod_dir)
 	{
 		Format(old_demo_filename, sizeof(old_demo_filename), "%s/_%s.dem", save_dir, g_log_filename);
@@ -4738,7 +4760,7 @@ LogPlayerStats(client)
 {
 	if (IsClientInGame(client) && GetClientTeam(client) > 1)
 	{
-		new String:log_string[256];
+		char log_string[256];
 		CS_GetLogString(client, log_string, sizeof(log_string));
 		for (new i = 0; i < NUM_WEAPONS; i++)
 		{
@@ -4766,7 +4788,7 @@ LogClutchStats(client)
 	{
 		if (clutch_stats[client][CLUTCH_LAST] == 1)
 		{
-			new String:log_string[256];
+			char log_string[256];
 			CS_GetLogString(client, log_string, sizeof(log_string));
 			Log2Game("\"player_clutch\" (player \"%s\") (versus \"%d\") (frags \"%d\") (bomb_planted \"%d\") (won \"%d\")", log_string, clutch_stats[client][CLUTCH_VERSUS], clutch_stats[client][CLUTCH_FRAGS], g_planted, clutch_stats[client][CLUTCH_WON]);
 			clutch_stats[client][CLUTCH_LAST] = 0;
@@ -4791,8 +4813,8 @@ GetWeaponIndex(const String:weapon[])
 
 Handle:MySQL_Connect()
 {
-	new String:error[256];
-	new Handle:db = INVALID_HANDLE;
+	char error[256];
+	Handle db = INVALID_HANDLE;
 	
 	if (SQL_CheckConfig("warmod"))
 	{
@@ -4809,9 +4831,9 @@ MySQL_UploadResults(match_length, String:map[], max_rounds, overtime_max_rounds,
 		return;
 	}
 	
-	new String:error[256];
-	new String:query_str[1024];
-	new String:tbl_name[128];
+	char error[256];
+	char query_str[1024];
+	char tbl_name[128];
 	
 	GetConVarString(g_h_table_name, tbl_name, sizeof(tbl_name));
 	SQL_EscapeString(wm_db, tbl_name, tbl_name, sizeof(tbl_name));
@@ -4820,7 +4842,7 @@ MySQL_UploadResults(match_length, String:map[], max_rounds, overtime_max_rounds,
 	SQL_FastQuery(wm_db, query_str);
 	
 	Format(query_str, sizeof(query_str), "INSERT INTO `%s` (`match_id`, `match_start`, `match_end`, `map`, `max_rounds`, `overtime_max_rounds`, `overtime_count`, `played_out`, `t_name`, `t_overall_score`, `t_first_half_score`, `t_second_half_score`, `t_overtime_score`, `ct_name`, `ct_overall_score`, `ct_first_half_score`, `ct_second_half_score`, `ct_overtime_score`) VALUES (NULL, DATE_SUB(NOW(), INTERVAL ? SECOND), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tbl_name);
-	new Handle:db_query = SQL_PrepareQuery(wm_db, query_str,	error, sizeof(error));
+	Handle db_query = SQL_PrepareQuery(wm_db, query_str,	error, sizeof(error));
 	
 	if (db_query == INVALID_HANDLE)
 	{
@@ -4865,11 +4887,11 @@ public Action:MessageHandler(UserMsg:msg_id, Handle:bf, const players[], players
 		return Plugin_Continue;
 	}
 	
-	new String:msg_name[128];
+	char msg_name[128];
 	GetUserMessageName(msg_id, msg_name, sizeof(msg_name));
-	new String:message[256];
+	char message[256];
 	BfReadString(bf, message, sizeof(message));
-	new String:msg[256];
+	char msg[256];
 	Format(msg, sizeof(msg), "%s", message[1]);
 	TrimString(msg);
 	if (GetConVarInt(g_h_damage) != 1 && StrEqual(msg_name, "TextMsg", false))
@@ -4880,8 +4902,8 @@ public Action:MessageHandler(UserMsg:msg_id, Handle:bf, const players[], players
 			{
 				return Plugin_Handled;
 			}
-			new String:s1[128];
-			new String:s2[128];
+			char s1[128];
+			char s2[128];
 			BfReadString(bf, s1, sizeof(s1));
 			BfReadString(bf, s2, sizeof(s2));
 			ReplaceString(message, sizeof(message), "%s1", s1);
@@ -4893,7 +4915,7 @@ public Action:MessageHandler(UserMsg:msg_id, Handle:bf, const players[], players
 			{
 				return Plugin_Handled;
 			}
-			new String:s1[128];
+			char s1[128];
 			BfReadString(bf, s1, sizeof(s1));
 			ReplaceString(message, sizeof(message), "%s1", s1);
 		}
@@ -4936,7 +4958,7 @@ public Action:MessageHandler(UserMsg:msg_id, Handle:bf, const players[], players
 
 public MenuHandler(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id, param, String:buffer[], maxlength)
 {
-	new String:menu_name[256];
+	char menu_name[256];
 	GetTopMenuObjName(topmenu, object_id, menu_name, sizeof(menu_name));
 	SetGlobalTransTarget(param);
 	
@@ -5104,6 +5126,7 @@ public int MenuHandler_List(Menu menu, MenuAction action, int param1, int param2
 			ActiveToggle(param1, 0);
 		}
 	}
+	return 0;
 }
 
 public DisplayPlayersMenu(client)
@@ -5172,6 +5195,7 @@ public int MenuHandle_Options(Menu menu, MenuAction action, int param1, int para
 		}
 		TeamsMenu(param1, i);
 	}
+	return 0;
 }
 
 public TeamsMenu(client, target)
@@ -5249,8 +5273,8 @@ public int TeamOptions(Menu menu, MenuAction action, int param1, int param2)
 		{
 			CS_SwitchTeam(str, 3);
 		}
-		
 	}
+	return 0;
 }
 
 
@@ -5340,11 +5364,11 @@ public Action:ShowPluginInfo(Handle:timer, any:client)
 {
 	if (client != 0 && IsClientConnected(client) && IsClientInGame(client))
 	{
-		new String:max_rounds[64];
+		char max_rounds[64];
 		GetConVarName(g_h_max_rounds, max_rounds, sizeof(max_rounds));
-		new String:min_ready[64];
+		char min_ready[64];
 		GetConVarName(g_h_min_ready, min_ready, sizeof(min_ready));
-		new String:play_out[64];
+		char play_out[64];
 		GetConVarName(g_h_play_out, play_out, sizeof(play_out));
 		PrintToConsole(client, "==============================================================");
 		PrintToConsole(client, "Este servidor ejecuta GameTech Warmod %s Plugin", WM_VERSION);
@@ -5498,7 +5522,7 @@ KickTeam(team)
 
 GetFrags(client)
 {
-	if (g_i_frags != -1 || (g_i_frags = FindDataMapOffs(client, "m_iFrags")) != -1)
+	if (g_i_frags != -1 || (g_i_frags = FindDataMapInfo(client, "m_iFrags")) != -1)
 	{
 		return GetEntData(client, g_i_frags);
 	}
@@ -5508,7 +5532,7 @@ GetFrags(client)
 
 SetFrags(client, frags)
 {
-	if (g_i_frags != -1 || (g_i_frags = FindDataMapOffs(client, "m_iFrags")) != -1)
+	if (g_i_frags != -1 || (g_i_frags = FindDataMapInfo(client, "m_iFrags")) != -1)
 	{
 		SetEntData(client, g_i_frags, frags);
 	}

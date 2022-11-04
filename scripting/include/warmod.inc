@@ -112,7 +112,7 @@ stock CS_GetLogString(client, String:LogString[], size)
 	new String:team[32];
 	
 	GetClientName(client, player_name, sizeof(player_name));
-	GetClientAuthString(client, authid, sizeof(authid));
+	GetClientAuthId(client, AuthId_Steam2, authid, sizeof(authid));
 	userid = GetClientUserId(client);
 	
 	if (GetClientTeam(client) == TERRORIST_TEAM)
@@ -159,7 +159,7 @@ stock CS_GetAdvLogString(client, String:LogString[], size)
 	new Float:eye_angles[3];
 	
 	GetClientName(client, player_name, sizeof(player_name));
-	GetClientAuthString(client, authid, sizeof(authid));
+	GetClientAuthId(client, AuthId_Steam2, authid, sizeof(authid));
 	userid = GetClientUserId(client);
 	
 	if (GetClientTeam(client) == TERRORIST_TEAM)
@@ -254,8 +254,8 @@ stock GetOtherTeam(team)
 
 stock CS_SwapTeams()
 {
-	new max_clients = GetMaxClients();
-	for (new i = 1; i <= max_clients; i++)
+	int max_clients = MaxClients;
+	for (int i = 1; i <= max_clients; i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) > 1)
 		{
@@ -273,9 +273,9 @@ stock CS_SwapTeams()
 
 stock CS_GetPlayingCount()
 {
-	new count;
-	new max_clients = GetMaxClients();
-	for (new i = 1; i <= max_clients; i++)
+	int count;
+	int max_clients = MaxClients;
+	for (int i = 1; i <= max_clients; i++)
 	{
 		if (IsClientInGame(i) && !IsFakeClient(i) && GetClientTeam(i) > 1)
 		{
@@ -328,9 +328,9 @@ stock CS_StripButKnife(client, bool:equip=true)
 
 stock GetNumAlive(team)
 {
-	new count;
-	new max_clients = GetMaxClients();
-	for (new i = 1; i < max_clients; i++)
+	int count;
+	int max_clients = MaxClients;
+	for (int i = 1; i < max_clients; i++)
 	{
 		if (IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == team)
 		{

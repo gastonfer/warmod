@@ -55,7 +55,7 @@
 	"Ready"
 	{
 		"en"			"You have been marked as ready"
-		"es"			"Ya te has marcado como Listo"
+		"es"			"Te has marcado como Listo"
 	}
 	"Not Ready"
 	{
@@ -234,8 +234,8 @@
 	}
 	"Console"
 	{
-		"en"			"{aqua}Console: "
-		"es"			"{aqua}Consola: "
+		"en"			"{aqua}ToxicXMDQ: "
+		"es"			"{aqua}ToxicXMDQ: "
 	}
 	"Available Commands"
 	{
